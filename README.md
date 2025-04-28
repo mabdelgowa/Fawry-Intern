@@ -131,3 +131,64 @@ In short: minimal structural change, just a few more lines inside the case and p
 
 The hardest part of script to implement was handling option parsing using getopts. Because it had while loop and inside it there is a case to check the options were passed to the script.
 
+
+
+# Q2 : Scenario
+
+## Note: For nost supporting a playground for this scenario, I will use my own playground. It's a Jenkins dashboard (available on port 8080 not 80 ) but not recorded internally. So I will try to solve this scenario and take some screenshots after that I will bypass the DNS problem by using /etc/hosts file
+
+### 1. Run `nslookup`
+Verify DNS Resolution
+
+```bash
+nslookup internal.example.com
+```
+
+```bash
+nslookup internal.example.com 8.8.8.8
+```
+
+```bash
+cat /etc/resolv.conf
+```
+
+### 2. Run `curl`
+Diagnose Service Reachability
+
+```bash
+curl -L 172.25.155.99:8080
+```
+
+### 3. Trace the Issue – List All Possible Causes
+1- As it's an internal dashboard, it should be resolver internally (not from 8.8.8.8)
+solution
+```bash
+echo "172.25.155.99  internal.example.com" >> /etc/hosts 
+```
+
+2- Open ports for the service 
+solution
+```bash
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+firewall-cmd --reload
+```
+
+3- Check the connetion to host 
+solution
+```bash
+tracerout 172.25.155.99
+```
+
+4- Check ports of the service through SELinux
+```bash
+semanage port -l | grep http
+```
+
+solution
+```bash
+semanage port -a -t http_port_t -p tcp 80
+semanage port -a -t http_port_t -p tcp 443
+systemctl start httpd
+```
+
+
